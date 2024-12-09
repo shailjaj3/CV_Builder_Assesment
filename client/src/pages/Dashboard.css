@@ -1,0 +1,210 @@
+
+@page {
+    size: A4;
+    margin: 20mm; 
+  }
+  
+  body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    page-break-after: always;
+  }
+  
+  /* Container for the entire resume */
+  .resume-container {
+    width: 100%;
+    max-width: 210mm; /* Width of A4 paper */
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px; 
+    page-break-after: always; 
+  }
+  
+  .left-section {
+    width: 35%;
+    background-color: #2D2D2D;
+    color: white;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .right-section {
+    width: 65%;
+    padding: 30px;
+  }
+  
+
+  .profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+  }
+  
+  .about-title, .contact-title, .skills-title, .language-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  
+  p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #ccc;
+    margin-bottom: 15px;
+  }
+  
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .contact-item a {
+    text-decoration: none;
+    color: #ccc;
+    transition: color 0.3s ease;
+  }
+  
+  .contact-item a:hover {
+    color: #fff;
+  }
+  
+  .icon {
+    font-size: 14px;
+    color: #ccc;
+  }
+  
+  .skills-list, .language-list {
+    list-style: none;
+  }
+  
+  .skills-list li, .language-list li {
+    color: #ccc;
+    margin-bottom: 8px;
+    transition: color 0.3s ease;
+  }
+  
+  .skills-list li:hover, .language-list li:hover {
+    color: #fff;
+  }
+  
+
+  .name {
+    font-size: 32px;
+    font-weight: bold;
+    color: #2D2D2D;
+    margin-bottom: 5px;
+  }
+  
+  .profession {
+    font-size: 18px;
+    font-weight: 300;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .education, .experience {
+    margin-bottom: 20px;
+  }
+  
+  .education-item, .experience-item {
+    margin-bottom: 15px;
+  }
+  
+  .education-item h4, .experience-item h4 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  
+  .education-item p, .experience-item p {
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .education-item span, .experience-item span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  /* Hover Effects */
+  .education-item h4:hover, .experience-item h4:hover {
+    color: #2D2D2D;
+    transition: color 0.3s ease;
+  }
+  
+  .education-item span:hover, .experience-item span:hover {
+    color: #000;
+    transition: color 0.3s ease;
+  }
+  
+
+  .resume-container {
+    page-break-after: always; 
+  }
+  
+  .resume-container:last-child {
+    page-break-after: avoid; 
+  }
+  
+  
+  @media print {
+    body {
+      background-color: white;
+    }
+  
+    .resume-container {
+      box-shadow: none;
+      margin-bottom: 0;
+    }
+  
+    .left-section, .right-section {
+      padding: 0;
+    }
+  
+    .left-section {
+      padding-right: 10px;
+    }
+  
+    .right-section {
+      padding-left: 10px;
+    }
+  
+    .profile-image {
+      width: 100px;
+      height: 100px;
+    }
+  
+    .name {
+      font-size: 28px;
+    }
+  
+    .profession {
+      font-size: 16px;
+    }
+  }
+  

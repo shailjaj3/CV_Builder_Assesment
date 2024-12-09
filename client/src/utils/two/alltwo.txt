@@ -1,0 +1,196 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
+import jsPDF from 'jspdf';
+
+const URL = import.meta.env.VITE_LOCAL_URL;
+
+function AllCVTwo() {
+    const { id } = useParams();
+    const [cvData, setCVData] = useState(null);
+
+    useEffect(() => {
+        const fetchCVData = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get(`${URL}/api/v1/cv/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                setCVData(response.data.data);
+            } catch (error) {
+                console.error('Error fetching CV data:', error);
+            }
+        };
+
+        if (id) {
+            fetchCVData();
+        }
+    }, [id]);
+
+    const generatePdf = () => {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        // Add title
+        pdf.setFontSize(22);
+        pdf.text(`${cvData?.basicDetails?.name}`, 105, 20, null, null, 'center');
+
+        // Add image
+        const imageUrl = cvData.basicDetails.imageUrl || '/pic2.jpg';
+        pdf.addImage(imageUrl, 'JPEG', 10, 30, 40, 40); // Adjust the x, y position and width/height
+
+        // Add introductory paragraph
+        pdf.setFontSize(12);
+        pdf.text('About Me:', 10, 80);
+        pdf.setFontSize(10);
+        pdf.text(cvData.basicDetails.introductoryParagraph || 'No introductory paragraph provided.', 10, 90, { maxWidth: 190 });
+
+        // Add contact info
+        pdf.setFontSize(12);
+        pdf.text('Contact:', 10, 110);
+        pdf.setFontSize(10);
+        const contactInfo = `${cvData.basicDetails.phone} | ${cvData.basicDetails.email}`;
+        pdf.text(contactInfo, 10, 120);
+        pdf.text(`${cvData.basicDetails.address}, ${cvData.basicDetails.city}, ${cvData.basicDetails.state}, ${cvData.basicDetails.pincode || ''}`, 10, 130);
+
+        // Add languages
+        pdf.setFontSize(12);
+        pdf.text('Languages:', 10, 140);
+        pdf.setFontSize(10);
+        const languages = cvData.languages?.join(', ') || 'No languages specified.';
+        pdf.text(languages, 10, 150);
+
+        // Add experience
+        pdf.setFontSize(12);
+        pdf.text('Experience:', 10, 160);
+        pdf.setFontSize(10);
+        cvData.experience?.forEach((exp, index) => {
+            pdf.text(`${exp.companyName} - ${exp.role}: ${exp.description}`, 10, 170 + index * 10);
+        });
+
+        // Add education
+        pdf.setFontSize(12);
+        pdf.text('Education:', 10, 170 + cvData.experience.length * 10 + 10);
+        pdf.setFontSize(10);
+        cvData.education?.forEach((edu, index) => {
+            pdf.text(`${edu.institution} - ${edu.degreeName} (${edu.percentage}%)`, 10, 180 + (cvData.experience.length + index) * 10);
+        });
+
+        // Add skills
+        pdf.setFontSize(12);
+        pdf.text('Skills:', 10, 180 + (cvData.experience.length + cvData.education.length) * 10 + 10);
+        pdf.setFontSize(10);
+        const skills = cvData.skills?.map(skill => skill.name).join(', ') || 'No skills specified.';
+        pdf.text(skills, 10, 190 + (cvData.experience.length + cvData.education.length) * 10);
+
+        pdf.save(`${cvData?.basicDetails?.name}-CV.pdf`);
+    };
+
+    const handlePayment = () => {
+        const options = {
+            key: 'rzp_test_zHsqW4O66eZ8Lt',
+            amount: 500, // ₹5 in paise (500 paise = ₹5)
+            currency: 'INR',
+            name: 'Your Company Name',
+            description: 'CV Download Fee',
+            handler: function (response) {
+                alert('Payment successful! Downloading CV...');
+                generatePdf();
+            },
+            prefill: {
+                name: cvData.basicDetails.name,
+                email: cvData.basicDetails.email,
+                contact: cvData.basicDetails.phone,
+            },
+            theme: {
+                color: '#3399cc',
+            },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+    };
+
+    if (!cvData) {
+        return <p>Loading...</p>;
+    }
+
+    return (
+        <div className="flex p-5 bg-gray-100" id="cv-section">
+            {/* Left Side */}
+            <div className="w-1/3 p-5 bg-gray-800 text-white rounded-lg mr-5">
+                <div className="text-center mb-5">
+                    <img
+                        src={cvData.basicDetails.imageUrl || '/pic2.jpg'}
+                        alt={cvData.basicDetails.name}
+                        className="w-40 h-40 rounded-full mx-auto object-cover"
+                    />
+                </div>
+                <h2 className="text-center text-2xl font-bold">{cvData.basicDetails.name}</h2>
+                <p className="text-center text-gray-400">Product Designer</p>
+
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">About Me</h3>
+                    <p>{cvData.basicDetails.introductoryParagraph || 'No introductory paragraph provided.'}</p>
+                </div>
+
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">Contact</h3>
+                    <p>{`${cvData.basicDetails.phone} | ${cvData.basicDetails.email}`}</p>
+                    <p>{`${cvData.basicDetails.address}, ${cvData.basicDetails.city}, ${cvData.basicDetails.state}, ${cvData.basicDetails.pincode || ''}`}</p>
+                </div>
+
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">Language</h3>
+                    <ul className="list-none">
+                        {cvData.languages?.map((lang, index) => (
+                            <li key={index}>{lang}</li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+
+            {/* Right Side */}
+            <div className="w-2/3 p-5 bg-white rounded-lg">
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">Experience</h3>
+                    {cvData.experience?.map((exp, index) => (
+                        <div key={index}>
+                            <h4>{exp.companyName}</h4>
+                            <p>{exp.role} - {exp.description}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">Education</h3>
+                    {cvData.education?.map((edu, index) => (
+                        <div key={index}>
+                            <h4>{edu.institution}</h4>
+                            <p>{edu.degreeName} - {edu.percentage}%</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-5">
+                    <h3 className="text-xl border-b border-gray-400 pb-2">Skills</h3>
+                    <ul className="list-none">
+                        {cvData.skills?.map((skill, index) => (
+                            <li key={index}>{skill.name}</li>
+                        ))}
+                    </ul>
+                </div>
+
+                <button
+                    className="bg-blue-600 text-white py-2 px-4 rounded-lg mt-5"
+                    onClick={handlePayment}
+                >
+                    Download CV (₹5)
+                </button>
+            </div>
+        </div>
+    );
+}
+
+export default AllCVTwo;
