@@ -22,8 +22,13 @@ const Login = ({ setToken, setUserName }) => {
     password: '',
   });
 
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+  });
+
   // Array of background images
-  const images = ['one.jpg', 'two.jpg', 'three.jpg', 'four.jpg'];
+  const images = [ 'four.jpg'];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Snackbar state
@@ -47,40 +52,65 @@ const Login = ({ setToken, setUserName }) => {
     return () => clearInterval(intervalId); // Cleanup interval on component unmount
   }, [images.length]);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
+    validateField(name, value); // Validate field as the user types
   };
 
-  // Handle form submission
+  const validateField = (name, value) => {
+    let error = '';
+
+    if (name === 'email') {
+      if (!value) {
+        error = 'Email is required.';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        error = 'Invalid email format.';
+      }
+    }
+
+    if (name === 'password') {
+      if (!value) {
+        error = 'Password is required.';
+      } else if (value.length < 6) {
+        error = 'Password must be at least 6 characters long.';
+      }
+    }
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: error,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
+    // Validate all fields before submission
+    const isValid =
+      Object.values(errors).every((error) => error === '') &&
+      Object.values(formData).every((value) => value);
+
+    if (!isValid) {
+      setSnackbarMessage('Please fix the errors before submitting.');
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
       const response = await axios.post(`${URL}/api/v1/auth/login`, formData);
-  
-      // Assuming the response contains the token directly
+
       const result = response.data;
-  
+
       if (result.token) {
-        // Save token and email to localStorage
         localStorage.setItem('token', result.token);
         localStorage.setItem('email', formData.email);
 
-  
-        // Show success message
         setSnackbarMessage('Login successful!');
         setSnackbarOpen(true);
-  
-        // // Navigate to the home page after a brief delay
-        // setTimeout(() => {
-        //   navigate('/');
-        // }, 1000);
-
 
         setToken(result.token); // Update token in parent state
         const user = JSON.parse(atob(result.token.split('.')[1]));
@@ -88,23 +118,20 @@ const Login = ({ setToken, setUserName }) => {
 
         navigate('/');
       } else {
-        // Handle case where token is not in the response
         const errorMessage = result.error || 'Login failed. Please try again.';
         setSnackbarMessage(errorMessage);
         setSnackbarOpen(true);
       }
     } catch (error) {
       console.error('Error during login:', error);
-  
-      // Show specific error message if available
+
       const errorMessage =
         error.response?.data?.error || 'An unexpected error occurred. Please try again.';
       setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
     }
   };
-  
-  // Handle snackbar close
+
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
@@ -137,6 +164,8 @@ const Login = ({ setToken, setUserName }) => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.email}
+              helperText={errors.email}
             />
             <TextField
               label="Password"
@@ -147,6 +176,8 @@ const Login = ({ setToken, setUserName }) => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.password}
+              helperText={errors.password}
             />
             <Button
               type="submit"

@@ -44,7 +44,7 @@ const Header = ({ token, userName, setToken, setUserName }) => {
 
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
+    <AppBar position="static" sx={{ backgroundColor: '#000' }}>
       <Toolbar>
         {/* Left-aligned items */}
         <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 'auto' }}>

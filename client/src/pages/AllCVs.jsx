@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react'; 
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Accordion, AccordionSummary, AccordionDetails, Typography, Button, Box } from '@mui/material';
+import { Grid, Card, CardContent, Avatar, Typography, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'; 
 import { MdEmail, MdPhone } from 'react-icons/md';
-import { ExpandMore } from '@mui/icons-material';
+import { Box } from '@mui/system';
+import jsPDF from 'jspdf';
 
-const imageArray = ['/rone.jpg', '/rtwo.jpg', '/rthree.jpg', '/rfour.jpg', '/rfive.jpg'];
+const imageArray = ['/rfour.jpg', '/rfive.jpg'];
 const URL = import.meta.env.VITE_LOCAL_URL;
 
 function AllCVs() {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
+
 
   const getToken = () => localStorage.getItem('token');
 
@@ -46,17 +50,18 @@ function AllCVs() {
     fetchProfiles();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
     try {
       const token = getToken();
-      const response = await axios.delete(`${URL}/api/v1/cv/${id}`, {
+      const response = await axios.delete(`${URL}/api/v1/cv/${selectedProfileId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.data.success) {
-        setProfiles((prevProfiles) => prevProfiles.filter((profile) => profile._id !== id));
+        setProfiles((prevProfiles) => prevProfiles.filter((profile) => profile._id !== selectedProfileId));
+        setOpenDialog(false); // Close the dialog after deletion
       } else {
         console.error('Failed to delete profile.');
       }
@@ -64,6 +69,18 @@ function AllCVs() {
       console.error('Error deleting profile:', error);
     }
   };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false); // Close the dialog without doing anything
+  };
+
+
+
+  const handleDeleteClick = (id) => {
+    setSelectedProfileId(id);
+    setOpenDialog(true); // Open the delete confirmation dialog
+  };
+
 
   const handleCardClick = (id, index) => {
     if (index % 2 === 0) {
@@ -73,8 +90,36 @@ function AllCVs() {
     }
   };
 
+  // Navigate to the dashboard with the CV ID for editing
   const handleEditClick = (id) => {
     navigate(`/editor/${id}`);
+  };
+
+  const generatePdf = (profile) => {
+    const { basicDetails = {} } = profile;
+    const { name = 'Unknown Name', email = 'N/A', phone = 'N/A', imageUrl = '/pic2.jpg' } = basicDetails;
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // Adding profile image
+    pdf.addImage(imageUrl, 'JPEG', 10, 10, 40, 40);
+
+    // Adding name and contact information
+    pdf.setFontSize(20);
+    pdf.text(name, 60, 20);
+
+    pdf.setFontSize(12);
+    pdf.text(`Email: ${email}`, 60, 30);
+    pdf.text(`Phone: ${phone}`, 60, 40);
+
+    // Adding a section for CV details
+    pdf.setFontSize(16);
+    pdf.text('About Me:', 10, 60);
+    pdf.setFontSize(12);
+    pdf.text(basicDetails.introductoryParagraph || 'No introductory paragraph provided.', 10, 70, { maxWidth: 180 });
+
+    // Save the generated PDF
+    pdf.save(`${name}_CV.pdf`);
   };
 
   return (
@@ -92,64 +137,86 @@ function AllCVs() {
         All CVs
       </Typography>
 
-      <Box sx={{ maxWidth: '800px', margin: '0 auto' }}>
+      <Grid container spacing={3}>
         {profiles.length > 0 ? (
           profiles.map((profile, index) => {
             const { basicDetails = {} } = profile;
-            const { name = 'Unknown Name', email = 'N/A', phone = 'N/A', imageUrl = '/pic2.jpg' } = basicDetails;
+            const {
+              name = 'Unknown Name',
+              email = 'N/A',
+              phone = 'N/A',
+              imageUrl = '',
+            } = basicDetails;
 
             return (
-              <Accordion key={profile._id} style={{ marginBottom: '10px', backgroundColor: '#e0f7fa' }}>
-                <AccordionSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls={`panel${profile._id}-content`}
-                  id={`panel${profile._id}-header`}
-                  style={{ cursor: 'pointer' }}
+              <Grid item xs={12} sm={6} md={4} key={profile._id}>
+                <Card
+                  style={{
+                    cursor: 'pointer',
+                    transition: '0.3s',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                    borderRadius: '15px',
+                    padding: '20px',
+                    backgroundColor: '#e0f7fa',
+                  }}
+                  sx={{
+                    ':hover': { boxShadow: 6 },
+                  }}
+                  onClick={() => handleCardClick(profile._id, index)} // Pass index to handleCardClick
                 >
-                  <Box display="flex" alignItems="center">
-                    <img
-                      src={imageUrl}
-                      alt={name}
-                      style={{ width: 60, height: 60, borderRadius: '50%', marginRight: '20px' }}
-                    />
-                    <Typography variant="h6">{name}</Typography>
+                  <Box display="flex" justifyContent="center" marginTop={2}>
+                    <Avatar alt={name} src={imageUrl} sx={{ width: 140, height: 140 }} />
                   </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
+
+                  <CardContent>
+                    <Typography variant="h6" component="div" align="center" gutterBottom>
+                      {name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" align="center">
                       <MdEmail /> {email}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" align="center">
                       <MdPhone /> {phone}
                     </Typography>
+                  </CardContent>
 
-                    <Box display="flex" justifyContent="flex-start" mt={2}>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(profile._id);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(profile._id);
-                        }}
-                        style={{ marginLeft: '10px' }}
-                      >
-                        Edit
-                      </Button>
-                    </Box>
+                  <Box display="flex" justifyContent="center" mt={2}>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(profile._id); // Open delete confirmation dialog
+                      }}
+                    >
+                      Delete
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(profile._id);
+                      }}
+                      style={{ marginLeft: '10px' }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="success"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        generatePdf(profile);
+                      }}
+                      style={{ marginLeft: '10px' }}
+                    >
+                      Download PDF
+                    </Button>
                   </Box>
-                </AccordionDetails>
-              </Accordion>
+                </Card>
+              </Grid>
             );
           })
         ) : (
@@ -157,7 +224,23 @@ function AllCVs() {
             No profiles found.
           </Typography>
         )}
-      </Box>
+      </Grid>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this profile?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            No
+          </Button>
+          <Button onClick={handleDelete} color="secondary">
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </div>
   );
 }

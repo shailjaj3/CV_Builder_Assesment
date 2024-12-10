@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const navigate = useNavigate(); // Initialize useNavigate hook
-  const [currentSection, setCurrentSection] = useState('basicDetails');
+  const [imgurl, setImgurl] = useState('');
+  const navigate = useNavigate();
+
   const [formValues, setFormValues] = useState({
     layout: 'creative',
     basicDetails: {
@@ -24,26 +25,21 @@ const Dashboard = () => {
     socialProfiles: [{ platformName: '', profileLink: '' }],
   });
 
-  const [selectedFile, setSelectedFile] = useState(null); // State for the uploaded file
-  const [filePreview, setFilePreview] = useState(null); // State for the file preview
+  const [uploadedImage, setUploadedImage] = useState('');
+  const URL = import.meta.env.VITE_LOCAL_URL;
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setSelectedFile(file);
 
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        // Display image preview
-        const imageUrl = URL.createObjectURL(file);
-        setFilePreview(<img src={imageUrl} alt="Preview" className="rounded-full w-16 h-16 object-cover" />);
-      } else if (file.type === 'application/pdf') {
-        // Display PDF name as preview
-        setFilePreview(<span className="text-sm text-gray-600">{file.name}</span>);
-      } else {
-        setFilePreview(<span className="text-sm text-red-600">Unsupported file type</span>);
-      }
+  useEffect(() => {
+    if (imgurl) {
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        basicDetails: {
+          ...prevValues.basicDetails,
+          imageUrl: imgurl,
+        },
+      }));
     }
-  };
+  }, [imgurl]);
 
   const handleInputChange = (e, section, index, field) => {
     const { name, value } = e.target;
@@ -57,8 +53,32 @@ const Dashboard = () => {
     setFormValues(updatedFormValues);
   };
 
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`${URL}/api/users/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
+      const result = await response.json();
+
+      const imgUrl = result.data.url;
+      setImgurl(imgUrl);
+      setUploadedImage(imgUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  };
+
   const handleAddField = (section) => {
     const updatedFormValues = { ...formValues };
+
     if (section === 'education') {
       updatedFormValues.education.push({ degreeName: '', institution: '', percentage: '' });
     } else if (section === 'experience') {
@@ -73,27 +93,10 @@ const Dashboard = () => {
     setFormValues(updatedFormValues);
   };
 
-  const handleSectionSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const sectionOrder = [
-      'basicDetails',
-      'education',
-      'experience',
-      'projects',
-      'skills',
-      'socialProfiles',
-    ];
-    const currentIndex = sectionOrder.indexOf(currentSection);
-    if (currentIndex < sectionOrder.length - 1) {
-      setCurrentSection(sectionOrder[currentIndex + 1]);
-    } else {
-      handleFinalSubmit();
-    }
-  };
-
-  const handleFinalSubmit = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_LOCAL_URL}/api/v1/cv`, {
+      const response = await fetch(`${URL}/api/v1/cv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +108,7 @@ const Dashboard = () => {
 
       if (result.success) {
         alert('CV submitted successfully');
-        navigate('/all-cvs'); // Navigate to /allcv page after successful submission
+        navigate('/all-cvs');
       } else {
         alert('Error submitting CV');
       }
@@ -114,17 +117,35 @@ const Dashboard = () => {
     }
   };
 
-  const renderSection = () => {
-    switch (currentSection) {
-      case 'basicDetails':
-        return (
-          <>
+  const handleRemoveField = (section, index) => {
+    const updatedFormValues = { ...formValues };
+    updatedFormValues[section].splice(index, 1); // Remove the item at the specified index
+    setFormValues(updatedFormValues);
+  };
+  
+
+  return (
+    <>
+
+      <div className="bg-gradient-to-r from-gray-200 via-gray-300 to-gray-500 p-6 rounded-lg shadow-lg w-full min-h-screen relative"
+        style={{
+          backgroundImage: `url('/rone.jpg')`,  // Path to the image in the public folder
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',          // Ensure the background is centered
+          width: "100%",
+          backgroundRepeat: 'no-repeat',
+        }}>
+        <div className="bg-gradient-to-r from-gray-200 via-gray-300 to-gray-500 p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">CV Builder</h2>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold">Layout: {formValues.layout}</h3>
+            </div>
+
             <h3 className="text-lg font-semibold">Basic Details</h3>
             {Object.keys(formValues.basicDetails).map((key) => (
               <div key={key} className="flex items-center mb-4">
-                <label className="flex-1 text-gray-700 pr-4 w-1/4">
-                  {key.charAt(0).toUpperCase() + key.slice(1)}:
-                </label>
+                <label className="flex-1 text-gray-700 pr-4 w-1/4">{key.charAt(0).toUpperCase() + key.slice(1)}:</label>
                 <input
                   className="flex-2 border border-gray-400 rounded-lg p-2 w-3/4"
                   type={key === 'email' ? 'email' : 'text'}
@@ -136,14 +157,21 @@ const Dashboard = () => {
                 />
               </div>
             ))}
-          </>
-        );
-      case 'education':
-        return (
-          <>
+
+            <div className="flex items-center mb-4">
+              <label className="block text-gray-700 w-1/4 pr-4">Image:</label>
+              <div className="w-3/4 flex items-center">
+                <input type="file" onChange={handleImageChange} accept="image/*" className="mb-4" />
+                {uploadedImage && (
+                  <img src={uploadedImage} alt="Uploaded" className="ml-4 w-24 h-24 object-cover rounded-full border border-gray-400" />
+                )}
+              </div>
+            </div>
+
+            {/* Education Section */}
             <h3 className="text-lg font-semibold">Education</h3>
             {formValues.education.map((edu, index) => (
-              <div key={index} className="space-y-4">
+              <div key={index} className="space-y-4 relative border p-4 rounded-md mb-4">
                 <input
                   type="text"
                   placeholder="Degree Name"
@@ -165,23 +193,24 @@ const Dashboard = () => {
                   onChange={(e) => handleInputChange(e, 'education', index, 'percentage')}
                   className="w-full border border-gray-400 rounded-lg p-2"
                 />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('education', index)}
+                  // className="absolute top-2 right-2 bg-red-500 text-white py-1 px-2 rounded-lg"
+                  className="remove-btn"
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => handleAddField('education')}
-              className="bg-gray-600 text-white py-2 px-4 rounded-lg"
-            >
+            <button type="button" onClick={() => handleAddField('education')} className="bg-gray-600 text-white py-2 px-4 rounded-lg">
               Add Education
             </button>
-          </>
-        );
-      case 'experience':
-        return (
-          <>
+
+            {/* Experience Section */}
             <h3 className="text-lg font-semibold">Experience</h3>
             {formValues.experience.map((exp, index) => (
-              <div key={index} className="space-y-4">
+              <div key={index} className="space-y-4 relative border p-4 rounded-md mb-4">
                 <input
                   type="text"
                   placeholder="Organization Name"
@@ -210,67 +239,23 @@ const Dashboard = () => {
                   onChange={(e) => handleInputChange(e, 'experience', index, 'technologies')}
                   className="w-full border border-gray-400 rounded-lg p-2"
                 />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('experience', index)}
+                  className="remove-btn"
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => handleAddField('experience')}
-              className="bg-gray-600 text-white py-2 px-4 rounded-lg"
-            >
+            <button type="button" onClick={() => handleAddField('experience')} className="bg-gray-600 text-white py-2 px-4 rounded-lg">
               Add Experience
             </button>
-          </>
-        );
-      case 'projects':
-        return (
-          <>
-            <h3 className="text-lg font-semibold">Projects</h3>
-            {formValues.projects.map((proj, index) => (
-              <div key={index} className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Project Title"
-                  value={proj.projectTitle}
-                  onChange={(e) => handleInputChange(e, 'projects', index, 'projectTitle')}
-                  className="w-full border border-gray-400 rounded-lg p-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Team Size"
-                  value={proj.teamSize}
-                  onChange={(e) => handleInputChange(e, 'projects', index, 'teamSize')}
-                  className="w-full border border-gray-400 rounded-lg p-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Duration"
-                  value={proj.duration}
-                  onChange={(e) => handleInputChange(e, 'projects', index, 'duration')}
-                  className="w-full border border-gray-400 rounded-lg p-2"
-                />
-                <textarea
-                  placeholder="Description"
-                  value={proj.description}
-                  onChange={(e) => handleInputChange(e, 'projects', index, 'description')}
-                  className="w-full border border-gray-400 rounded-lg p-2"
-                />
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => handleAddField('projects')}
-              className="bg-gray-600 text-white py-2 px-4 rounded-lg"
-            >
-              Add Project
-            </button>
-          </>
-        );
-      case 'skills':
-        return (
-          <>
+
+            {/* Skills Section */}
             <h3 className="text-lg font-semibold">Skills</h3>
             {formValues.skills.map((skill, index) => (
-              <div key={index} className="space-y-4">
+              <div key={index} className="space-y-4 relative border p-4 rounded-md mb-4">
                 <input
                   type="text"
                   placeholder="Skill Name"
@@ -280,28 +265,28 @@ const Dashboard = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Proficiency Level"
+                  placeholder="Proficiency"
                   value={skill.perfection}
                   onChange={(e) => handleInputChange(e, 'skills', index, 'perfection')}
                   className="w-full border border-gray-400 rounded-lg p-2"
                 />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('skills', index)}
+                  className="remove-btn"
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => handleAddField('skills')}
-              className="bg-gray-600 text-white py-2 px-4 rounded-lg"
-            >
+            <button type="button" onClick={() => handleAddField('skills')} className="bg-gray-600 text-white py-2 px-4 rounded-lg">
               Add Skill
             </button>
-          </>
-        );
-      case 'socialProfiles':
-        return (
-          <>
+
+            {/* Social Profiles Section */}
             <h3 className="text-lg font-semibold">Social Profiles</h3>
             {formValues.socialProfiles.map((profile, index) => (
-              <div key={index} className="space-y-4">
+              <div key={index} className="space-y-4 relative border p-4 rounded-md mb-4">
                 <input
                   type="text"
                   placeholder="Platform Name"
@@ -316,56 +301,25 @@ const Dashboard = () => {
                   onChange={(e) => handleInputChange(e, 'socialProfiles', index, 'profileLink')}
                   className="w-full border border-gray-400 rounded-lg p-2"
                 />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('socialProfiles', index)}
+                  className="remove-btn"
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => handleAddField('socialProfiles')}
-              className="bg-gray-600 text-white py-2 px-4 rounded-lg"
-            >
+            <button type="button" onClick={() => handleAddField('socialProfiles')} className="bg-gray-600 text-white py-2 px-4 rounded-lg">
               Add Social Profile
             </button>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
 
-  return (
-    <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-4xl mx-auto relative">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">CV Builder</h2>
-      <form onSubmit={handleSectionSubmit}>
-        {renderSection()}
-        <button type="submit" className="bg-green-500 text-white py-2 px-4 rounded-lg mt-4">
-          {currentSection === 'socialProfiles' ? 'Submit CV' : 'Next'}
-        </button>
-      </form>
-
-      {/* File Upload Section */}
-      <div className="mt-6">
-        <label className="block font-medium text-gray-700 mb-2">Upload File (Image or PDF)</label>
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none"
-        />
-        {filePreview && (
-          <div className="mt-4">
-            <h4 className="text-gray-700 font-medium">Preview:</h4>
-            <div className="mt-2">{filePreview}</div>
-          </div>
-        )}
-      </div>
-
-      {/* File Preview at Top Right */}
-      {filePreview && (
-        <div className="absolute top-4 right-4">
-          {filePreview}
+            <button type="submit" className="bg-green-500 text-white py-2 px-4 rounded-lg">Submit CV</button>
+          </form>
         </div>
-      )}
-    </div>
+
+      </div>
+    </>
   );
 };
 

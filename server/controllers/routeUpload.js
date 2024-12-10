@@ -14,7 +14,6 @@ router.post('/upload', upload.any('image'), async (req, res) => {
   try {
     
     
-    console.log("===>", req.files);
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -27,7 +26,6 @@ router.post('/upload', upload.any('image'), async (req, res) => {
     const file = req.files[0];
     const result = await cloudinary.uploader.upload(file.path);
     const imageur = result.url
-    console.log("222222222", imageur);
 
     // Respond with success message and image URL
 

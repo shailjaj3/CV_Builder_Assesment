@@ -29,6 +29,12 @@
     page-break-after: always; 
   }
   
+
+    /* Add this in your CSS file if necessary */
+  button.absolute {
+  z-index: 10; /* Ensures button stays on top */
+  }
+
   .left-section {
     width: 35%;
     background-color: #2D2D2D;
@@ -120,6 +126,14 @@
     margin-bottom: 20px;
   }
   
+
+  .rounded-lg {
+    border-radius: 4.5rem;
+  }
+
+  .border {
+    border-width: 2px;
+}
   .section-title {
     font-size: 16px;
     font-weight: bold;
@@ -171,6 +185,8 @@
     page-break-after: avoid; 
   }
   
+
+  
   
   @media print {
     body {
@@ -206,5 +222,45 @@
     .profession {
       font-size: 16px;
     }
+  }
+
+
+  /* .remove-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    z-index: 10;
+  } */
+  
+
+  .remove-btn {
+    position: absolute;
+    top: -8px; /* Adjusts the vertical position */
+    right: -8px; /* Adjusts the horizontal position */
+    background-color: rgb(220, 38, 38); /* Red background color */
+    color: white;
+    padding: 6px 12px; /* Adjust padding for better size */
+    border-radius: 0.5rem; /* Rounded edges */
+    font-size: 16px; /* Adjust font size */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .remove-btn:hover {
+    background-color: rgb(185, 28, 28); /* Darker red on hover */
+    transform: scale(1.1); /* Slightly enlarges on hover */
+  }
+  
+  button, [role="button"] {
+    cursor: pointer;
   }
   

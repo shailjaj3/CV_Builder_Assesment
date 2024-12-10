@@ -70,13 +70,25 @@ exports.getCVById = async (req, res) => {
 // Update a CV by ID, but only if it belongs to the logged-in user
 exports.updateCV = async (req, res) => {
     try {
-        const { layout, basicDetails, education, experience, projects, skills, socialProfiles } = req.body;
+
+        const {
+            layout,
+            basicDetails,
+            education,
+            experience,
+            projects,
+            skills,
+            socialProfiles,
+        } = req.body;
+
+        // Extract imageUrl from basicDetails or req.file
+        const imageUrl = basicDetails?.imageUrl || req.file?.path;
 
         const updateData = {
             layout,
             basicDetails: {
                 ...basicDetails,
-                imageUrl: req.file ? req.file.path : undefined,
+                imageUrl,
             },
             education,
             experience,
@@ -85,7 +97,7 @@ exports.updateCV = async (req, res) => {
             socialProfiles,
         };
 
-        // Ensure the CV belongs to the logged-in user before updating
+
         const cv = await CV.findOneAndUpdate(
             { _id: req.params.id, user: req.userId },
             updateData,
@@ -93,12 +105,12 @@ exports.updateCV = async (req, res) => {
         );
 
         if (!cv) {
-            return res.status(404).json({ success: false, message: "CV not found or not authorized" });
+            return res.status(404).json({ success: false, message: 'CV not found or not authorized' });
         }
 
         res.status(200).json({
             success: true,
-            message: "CV updated successfully!",
+            message: 'CV updated successfully!',
             data: cv,
         });
     } catch (error) {

@@ -23,6 +23,13 @@ const Register = () => {
     password: '',
   });
 
+  const [errors, setErrors] = useState({
+    username: '',
+    email: '',
+    contactNumber: '',
+    password: '',
+  });
+
   // Array of background images
   const images = ['rone.jpg', 'rtwo.jpg', 'rthree.jpg', 'rfour.jpg', 'rfive.jpg'];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -42,14 +49,65 @@ const Register = () => {
       ...prevData,
       [name]: value,
     }));
+    validateField(name, value); // Validate the field as the user types
+  };
+
+  const validateField = (name, value) => {
+    let error = '';
+
+    switch (name) {
+      case 'username':
+        if (!value) {
+          error = 'Username is required.';
+        } else if (value.length < 3) {
+          error = 'Username must be at least 3 characters long.';
+        }
+        break;
+      case 'email':
+        if (!value) {
+          error = 'Email is required.';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Invalid email format.';
+        }
+        break;
+      case 'contactNumber':
+        if (!value) {
+          error = 'Contact number is required.';
+        } else if (!/^\d{10}$/.test(value)) {
+          error = 'Contact number must be 10 digits.';
+        }
+        break;
+      case 'password':
+        if (!value) {
+          error = 'Password is required.';
+        } else if (value.length < 6) {
+          error = 'Password must be at least 6 characters long.';
+        }
+        break;
+      default:
+        break;
+    }
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: error,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate all fields before submission
+    const isValid = Object.values(errors).every((error) => error === '') &&
+      Object.values(formData).every((value) => value);
+
+    if (!isValid) {
+      alert('Please fix the errors before submitting.');
+      return;
+    }
+
     try {
       const response = await axios.post(`${URL}/api/v1/auth/register`, formData);
-      console.log('Registration successful:', response.data);
 
       navigate('/dashboard');
       alert('Registration successful');
@@ -86,6 +144,8 @@ const Register = () => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.username}
+              helperText={errors.username}
             />
             <TextField
               label="Email"
@@ -96,6 +156,8 @@ const Register = () => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.email}
+              helperText={errors.email}
             />
             <TextField
               label="Contact Number"
@@ -106,6 +168,8 @@ const Register = () => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.contactNumber}
+              helperText={errors.contactNumber}
             />
             <TextField
               label="Password"
@@ -116,6 +180,8 @@ const Register = () => {
               onChange={handleChange}
               required
               margin="normal"
+              error={!!errors.password}
+              helperText={errors.password}
             />
             <Button
               type="submit"

@@ -4,7 +4,6 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import Editor from './pages/Editor';
 
-
 // Lazy load the components
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Templates = lazy(() => import('./pages/Templates'));
@@ -14,52 +13,46 @@ const AllCVTwo = lazy(() => import('./utils/two/AllCVTwo'));
 const AllCVOne = lazy(() => import('./utils/one/AllCVOne'));
 const Login = lazy(() => import('./pages/Login'));
 
-
-
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [userName, setUserName] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Derived state for authentication
+  const isAuthenticated = Boolean(token);
 
-
+  // Update token and username on login
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-  }, []);
-
-
+    if (token) {
+      localStorage.setItem('token', token); // Persist token
+    } else {
+      localStorage.removeItem('token'); // Clear token on logout
+    }
+  }, [token]);
 
   return (
     <Router>
-      {/* <Header /> */}
       <Header token={token} userName={userName} setToken={setToken} setUserName={setUserName} />
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
-          {/* Show Login and Register routes only if not authenticated */}
           {!isAuthenticated ? (
             <>
+              {/* Public Routes */}
               <Route path="/login" element={<Login setToken={setToken} setUserName={setUserName} />} />
               <Route path="/register" element={<Register />} />
-               <Route path="*" element={<Navigate to="/login" />} />
-              <Route path="/" element={<Home/>} /> 
+              <Route path="*" element={<Navigate to="/login" />} />
             </>
           ) : (
             <>
-              {/* Authenticated routes */}
+              {/* Private Routes */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/all-cvs" element={<AllCVs />} />
               <Route path="/AllCVTwo/:id" element={<AllCVTwo />} />
-              <Route path="/Editor/:id" element={<Editor/>} />
-
+              <Route path="/Editor/:id" element={<Editor />} />
               <Route path="/AllCVOne" element={<AllCVOne />} />
               <Route path="/AllCVOne/:id" element={<AllCVOne />} />
-
-              <Route path="*" element={<Navigate to="/" />} /> 
-              <Route path="/" element={<Home/>} /> 
-
-
+              <Route path="/" element={<Home />} />
+              <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
         </Routes>
